@@ -71,12 +71,26 @@ export class FileSearchClient {
   }
 
   /**
-   * List all files in a corpus
+   * List files in a corpus with pagination support
    */
-  async listFiles(corpusId: string): Promise<FileSearchFile[]> {
-    logger.debug('Listing files in corpus', { corpusId })
+  async listFiles(
+    corpusId: string,
+    options: { pageToken?: string; pageSize?: number } = {}
+  ): Promise<{ files: FileSearchFile[]; nextPageToken?: string }> {
+    logger.debug('Listing files in corpus', { corpusId, ...options })
 
-    const response = await fetch(`${BASE_URL}/corpora/${corpusId}/files`, {
+    // Build query parameters
+    const params = new URLSearchParams()
+    if (options.pageToken) {
+      params.append('pageToken', options.pageToken)
+    }
+    if (options.pageSize) {
+      params.append('pageSize', options.pageSize.toString())
+    }
+
+    const url = `${BASE_URL}/corpora/${corpusId}/files${params.toString() ? `?${params.toString()}` : ''}`
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'X-Goog-Api-Key': this.apiKey,
@@ -89,11 +103,41 @@ export class FileSearchClient {
       throw new Error(`Failed to list files: ${error}`)
     }
 
-    const data = await response.json() as { files?: FileSearchFile[] }
+    const data = await response.json() as {
+      files?: FileSearchFile[]
+      nextPageToken?: string
+    }
     const files = data.files || []
 
-    logger.debug('Files listed', { corpusId, count: files.length })
-    return files
+    logger.debug('Files listed', {
+      corpusId,
+      count: files.length,
+      hasMore: !!data.nextPageToken
+    })
+
+    return {
+      files,
+      nextPageToken: data.nextPageToken,
+    }
+  }
+
+  /**
+   * List all files in a corpus (automatically handles pagination)
+   */
+  async listAllFiles(corpusId: string): Promise<FileSearchFile[]> {
+    logger.debug('Listing all files in corpus', { corpusId })
+
+    const allFiles: FileSearchFile[] = []
+    let pageToken: string | undefined
+
+    do {
+      const { files, nextPageToken } = await this.listFiles(corpusId, { pageToken })
+      allFiles.push(...files)
+      pageToken = nextPageToken
+    } while (pageToken)
+
+    logger.debug('All files listed', { corpusId, totalCount: allFiles.length })
+    return allFiles
   }
 
   /**

@@ -36,17 +36,31 @@ describe('FileSearchClient', () => {
       expect(corpus.createTime).toBeDefined()
     })
 
-    it('should list files in corpus', async () => {
+    it('should list files in corpus with pagination', async () => {
       if (!testCorpusId) {
         console.log('Skipping - no GOOGLE_CORPUS_ID set')
         return
       }
 
-      const files = await client.listFiles(testCorpusId)
+      const result = await client.listFiles(testCorpusId)
+
+      expect(result).toBeDefined()
+      expect(result.files).toBeDefined()
+      expect(Array.isArray(result.files)).toBe(true)
+      // Files may or may not exist yet
+      console.log(`Current file count: ${result.files.length}`)
+    })
+
+    it('should list all files in corpus (auto-pagination)', async () => {
+      if (!testCorpusId) {
+        console.log('Skipping - no GOOGLE_CORPUS_ID set')
+        return
+      }
+
+      const files = await client.listAllFiles(testCorpusId)
 
       expect(Array.isArray(files)).toBe(true)
-      // Files may or may not exist yet
-      console.log(`Current file count: ${files.length}`)
+      console.log(`Total files (all pages): ${files.length}`)
     })
   })
 

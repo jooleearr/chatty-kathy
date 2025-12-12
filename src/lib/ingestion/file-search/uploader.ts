@@ -171,7 +171,7 @@ export class FileSearchUploader {
   async clearCorpus(): Promise<number> {
     logger.warn('Clearing all files from corpus', { corpusId: this.corpusId })
 
-    const files = await this.client.listFiles(this.corpusId)
+    const files = await this.client.listAllFiles(this.corpusId)
     let deletedCount = 0
 
     for (const file of files) {
