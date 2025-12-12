@@ -12,10 +12,15 @@
  * 3. Save it to your .env.local file (you can copy it manually)
  */
 
+import { config } from 'dotenv'
+import * as path from 'path'
+
+// Load environment variables from .env.local
+config({ path: path.join(process.cwd(), '.env.local') })
+
 import { FileSearchClient } from '../src/lib/ingestion/file-search/client'
 import { logger } from '../src/lib/utils/logger'
 import * as fs from 'fs'
-import * as path from 'path'
 
 async function main() {
   console.log('\n🚀 Creating Google File Search Corpus...\n')

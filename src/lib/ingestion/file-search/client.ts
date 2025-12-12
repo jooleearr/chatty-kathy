@@ -17,6 +17,68 @@ export class FileSearchClient {
   }
 
   /**
+   * List all corpora
+   */
+  async listCorpora(options: { pageToken?: string; pageSize?: number } = {}): Promise<{
+    corpora: FileSearchCorpus[]
+    nextPageToken?: string
+  }> {
+    logger.debug('Listing corpora', options)
+
+    const params = new URLSearchParams()
+    if (options.pageToken) {
+      params.append('pageToken', options.pageToken)
+    }
+    if (options.pageSize) {
+      params.append('pageSize', options.pageSize.toString())
+    }
+
+    const url = `${BASE_URL}/corpora${params.toString() ? `?${params.toString()}` : ''}`
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-Goog-Api-Key': this.apiKey,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      logger.error('Failed to list corpora', new Error(error))
+      throw new Error(`Failed to list corpora: ${error}`)
+    }
+
+    const data = await response.json() as {
+      corpora?: FileSearchCorpus[]
+      nextPageToken?: string
+    }
+
+    return {
+      corpora: data.corpora || [],
+      nextPageToken: data.nextPageToken,
+    }
+  }
+
+  /**
+   * List all corpora (automatically handles pagination)
+   */
+  async listAllCorpora(): Promise<FileSearchCorpus[]> {
+    logger.debug('Listing all corpora')
+
+    const allCorpora: FileSearchCorpus[] = []
+    let pageToken: string | undefined
+
+    do {
+      const { corpora, nextPageToken } = await this.listCorpora({ pageToken })
+      allCorpora.push(...corpora)
+      pageToken = nextPageToken
+    } while (pageToken)
+
+    logger.debug('All corpora listed', { totalCount: allCorpora.length })
+    return allCorpora
+  }
+
+  /**
    * Create a new File Search corpus
    */
   async createCorpus(displayName: string): Promise<FileSearchCorpus> {
@@ -46,6 +108,28 @@ export class FileSearchClient {
     })
 
     return corpus
+  }
+
+  /**
+   * Delete a corpus
+   */
+  async deleteCorpus(corpusId: string): Promise<void> {
+    logger.info('Deleting corpus', { corpusId })
+
+    const response = await fetch(`${BASE_URL}/corpora/${corpusId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Goog-Api-Key': this.apiKey,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      logger.error('Failed to delete corpus', new Error(error), { corpusId })
+      throw new Error(`Failed to delete corpus: ${error}`)
+    }
+
+    logger.info('Corpus deleted successfully', { corpusId })
   }
 
   /**
@@ -99,8 +183,12 @@ export class FileSearchClient {
 
     if (!response.ok) {
       const error = await response.text()
-      logger.error('Failed to list files', new Error(error), { corpusId })
-      throw new Error(`Failed to list files: ${error}`)
+      logger.error('Failed to list files', new Error(error), {
+        corpusId,
+        status: response.status,
+        statusText: response.statusText
+      })
+      throw new Error(`Failed to list files (${response.status}): ${error}`)
     }
 
     const data = await response.json() as {
@@ -184,9 +272,11 @@ export class FileSearchClient {
       const error = await response.text()
       logger.error('Failed to upload file', new Error(error), {
         corpusId,
-        displayName
+        displayName,
+        status: response.status,
+        statusText: response.statusText
       })
-      throw new Error(`Failed to upload file: ${error}`)
+      throw new Error(`Failed to upload file (${response.status}): ${error}`)
     }
 
     const file = await response.json() as FileSearchFile
