@@ -1,5 +1,9 @@
 /**
  * Tests for File Search uploader
+ *
+ * Note: These tests use the new FileSearchStores API which has limited
+ * file management capabilities (no listing or deletion of individual files).
+ * Tests focus on upload functionality which is fully supported.
  */
 
 import { describe, it, expect, beforeAll } from 'vitest'
@@ -58,6 +62,7 @@ This is a test issue for validating the upload functionality.
       expect(result.error).toBeUndefined()
 
       console.log(`✅ Uploaded: ${result.fileName}`)
+      console.log(`   Note: File cleanup not available in FileSearchStores API`)
     }, 60000)
   })
 
@@ -100,6 +105,7 @@ This is a test issue for validating the upload functionality.
       console.log(
         `✅ Batch upload: ${result.successCount}/${result.totalDocuments} successful in ${result.duration}ms`
       )
+      console.log(`   Note: Files remain in corpus (cleanup not available in new API)`)
     }, 120000) // 2 minute timeout for batch
   })
 

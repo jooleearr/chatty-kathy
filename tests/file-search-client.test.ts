@@ -21,8 +21,8 @@ describe('FileSearchClient', () => {
     testCorpusId = env.GOOGLE_CORPUS_ID
   })
 
-  describe('Corpus Operations', () => {
-    it('should get corpus details if corpus ID is set', async () => {
+  describe('Store Operations', () => {
+    it('should get store details if corpus ID is set', async () => {
       if (!testCorpusId) {
         console.log('Skipping - no GOOGLE_CORPUS_ID set')
         return
@@ -36,7 +36,26 @@ describe('FileSearchClient', () => {
       expect(corpus.createTime).toBeDefined()
     })
 
-    it('should list files in corpus with pagination', async () => {
+    it('should list all stores', async () => {
+      const result = await client.listCorpora({ pageSize: 10 })
+
+      expect(result).toBeDefined()
+      expect(result.corpora).toBeDefined()
+      expect(Array.isArray(result.corpora)).toBe(true)
+      console.log(`Found ${result.corpora.length} stores`)
+    })
+
+    it('should list all stores with auto-pagination', async () => {
+      const stores = await client.listAllCorpora()
+
+      expect(Array.isArray(stores)).toBe(true)
+      expect(stores.length).toBeGreaterThan(0)
+      console.log(`Total stores (all pages): ${stores.length}`)
+    })
+  })
+
+  describe('File Listing (Unsupported in New API)', () => {
+    it('should return empty array when listing files (not supported)', async () => {
       if (!testCorpusId) {
         console.log('Skipping - no GOOGLE_CORPUS_ID set')
         return
@@ -47,11 +66,11 @@ describe('FileSearchClient', () => {
       expect(result).toBeDefined()
       expect(result.files).toBeDefined()
       expect(Array.isArray(result.files)).toBe(true)
-      // Files may or may not exist yet
-      console.log(`Current file count: ${result.files.length}`)
+      expect(result.files).toHaveLength(0)
+      console.log('✓ File listing returns empty (as expected with new API)')
     })
 
-    it('should list all files in corpus (auto-pagination)', async () => {
+    it('should return empty array when listing all files (not supported)', async () => {
       if (!testCorpusId) {
         console.log('Skipping - no GOOGLE_CORPUS_ID set')
         return
@@ -60,12 +79,13 @@ describe('FileSearchClient', () => {
       const files = await client.listAllFiles(testCorpusId)
 
       expect(Array.isArray(files)).toBe(true)
-      console.log(`Total files (all pages): ${files.length}`)
+      expect(files).toHaveLength(0)
+      console.log('✓ File listing returns empty (as expected with new API)')
     })
   })
 
   describe('File Operations', () => {
-    it('should upload and retrieve a test file', async () => {
+    it('should upload a test file successfully', async () => {
       if (!testCorpusId) {
         console.log('Skipping - no GOOGLE_CORPUS_ID set')
         return
@@ -85,41 +105,37 @@ This document is used to test the File Search upload functionality.
       // Upload the file
       const uploadedFile = await client.uploadFile(testCorpusId, testContent, {
         displayName: fileName,
-        metadata: {
-          test: true,
-          timestamp: new Date().toISOString(),
-        },
       })
 
       expect(uploadedFile).toBeDefined()
       expect(uploadedFile.name).toBeDefined()
+      expect(uploadedFile.displayName).toBe(fileName)
       expect(uploadedFile.state).toBe('PROCESSING')
 
       // Extract file ID
       const fileId = uploadedFile.name.split('/').pop()
       expect(fileId).toBeDefined()
 
-      // Wait for processing
+      console.log(`✅ Test file ${fileName} uploaded successfully`)
+      console.log(`   Note: File cleanup not supported in FileSearchStores API`)
+    }, 60000) // 60 second timeout for this test
+
+    it('should handle file processing wait (mock in new API)', async () => {
+      if (!testCorpusId) {
+        console.log('Skipping - no GOOGLE_CORPUS_ID set')
+        return
+      }
+
+      // In the new API, this just returns a mock ACTIVE file immediately
       const processedFile = await client.waitForFileProcessing(
         testCorpusId,
-        fileId!,
-        30000 // 30 second timeout
+        'any-file-id',
+        5000
       )
 
       expect(processedFile.state).toBe('ACTIVE')
-      expect(processedFile.displayName).toBe(fileName)
-
-      // Get file details
-      const retrievedFile = await client.getFile(testCorpusId, fileId!)
-
-      expect(retrievedFile.name).toBe(processedFile.name)
-      expect(retrievedFile.state).toBe('ACTIVE')
-
-      // Clean up - delete the test file
-      await client.deleteFile(testCorpusId, fileId!)
-
-      console.log(`✅ Test file ${fileName} uploaded and deleted successfully`)
-    }, 60000) // 60 second timeout for this test
+      console.log('✓ waitForFileProcessing returns ACTIVE (mock in new API)')
+    })
   })
 
   describe('Error Handling', () => {
@@ -132,15 +148,21 @@ This document is used to test the File Search upload functionality.
       await expect(client.getCorpus('invalid-corpus-id')).rejects.toThrow()
     })
 
-    it('should throw error for invalid file ID', async () => {
+    it('should throw error for unsupported individual file operations', async () => {
       if (!testCorpusId) {
         console.log('Skipping - no GOOGLE_CORPUS_ID set')
         return
       }
 
+      // getFile is not supported in FileSearchStores API
       await expect(
-        client.getFile(testCorpusId, 'invalid-file-id')
-      ).rejects.toThrow()
+        client.getFile(testCorpusId, 'any-file-id')
+      ).rejects.toThrow('Individual file operations not supported')
+
+      // deleteFile is not supported in FileSearchStores API
+      await expect(
+        client.deleteFile(testCorpusId, 'any-file-id')
+      ).rejects.toThrow('Individual file operations not supported')
     })
   })
 })

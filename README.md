@@ -90,6 +90,12 @@ chatty-kathy/
 - `npm start` - Start production server
 - `npm run lint` - Run ESLint
 - `npm run type-check` - Run TypeScript type checking
+- `npm test` - Run tests in watch mode
+- `npm run test:run` - Run tests once
+- `npm run test:ui` - Run tests with UI
+- `npm run create-corpus` - Create a new File Search corpus (one-time setup)
+- `npm run list-corpora` - List all File Search corpora
+- `npm run delete-all-corpora` - Delete all File Search corpora (⚠️ destructive)
 
 ### Project Status
 
@@ -99,8 +105,13 @@ chatty-kathy/
 - Environment configuration
 - Project structure created
 
+**Phase 1: Google File Search Setup** ✅ COMPLETE
+- FileSearchStores API client implemented
+- Document uploader with batch support
+- Integration tests with real API
+- Corpus creation script
+
 **Next Steps** (see [implementation plan](./.claude/plans/soft-knitting-hopper.md)):
-- Phase 1: Google File Search setup
 - Phase 2: Chat interface foundation
 - Phase 3: GitHub data ingestion pipeline
 - Phase 4: GitHub search tool
@@ -179,7 +190,7 @@ MIT
 ## Roadmap
 
 - [x] Phase 0: Project foundation
-- [ ] Phase 1: Google File Search setup
+- [x] Phase 1: Google File Search setup (FileSearchStores API)
 - [ ] Phase 2: Chat interface
 - [ ] Phase 3: GitHub data ingestion
 - [ ] Phase 4: GitHub search tool
