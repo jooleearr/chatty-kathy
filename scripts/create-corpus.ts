@@ -39,23 +39,23 @@ async function main() {
     const client = new FileSearchClient(apiKey)
 
     const displayName = `chatty-kathy-${Date.now()}`
-    console.log(`Creating corpus: ${displayName}`)
+    console.log(`Creating File Search Store: ${displayName}`)
 
-    const corpus = await client.createCorpus(displayName)
+    const store = await client.createCorpus(displayName)
 
-    // Extract corpus ID from the resource name
-    const corpusId = corpus.name.split('/').pop()
+    // Extract store ID from the resource name
+    const storeId = store.name.split('/').pop()
 
-    console.log('\n✅ Corpus created successfully!')
-    console.log('\n📋 Corpus Details:')
-    console.log(`   Name: ${corpus.displayName}`)
-    console.log(`   ID: ${corpusId}`)
-    console.log(`   Resource Name: ${corpus.name}`)
-    console.log(`   Created: ${corpus.createTime}`)
+    console.log('\n✅ File Search Store created successfully!')
+    console.log('\n📋 Store Details:')
+    console.log(`   Name: ${store.displayName}`)
+    console.log(`   ID: ${storeId}`)
+    console.log(`   Resource Name: ${store.name}`)
+    console.log(`   Created: ${store.createTime}`)
 
     console.log('\n📝 Next Steps:')
     console.log('\n1. Add this to your .env.local file:')
-    console.log(`\n   GOOGLE_CORPUS_ID=${corpusId}\n`)
+    console.log(`\n   GOOGLE_CORPUS_ID=${storeId}\n`)
 
     // Optionally update .env.local automatically
     const envPath = path.join(process.cwd(), '.env.local')
@@ -66,13 +66,13 @@ async function main() {
         // Replace the placeholder
         const newContent = envContent.replace(
           'GOOGLE_CORPUS_ID=your_corpus_id_here',
-          `GOOGLE_CORPUS_ID=${corpusId}`
+          `GOOGLE_CORPUS_ID=${storeId}`
         )
         fs.writeFileSync(envPath, newContent, 'utf-8')
         console.log('   ✅ Updated .env.local automatically!\n')
       } else if (!envContent.includes('GOOGLE_CORPUS_ID=')) {
         // Append to file
-        fs.appendFileSync(envPath, `\nGOOGLE_CORPUS_ID=${corpusId}\n`, 'utf-8')
+        fs.appendFileSync(envPath, `\nGOOGLE_CORPUS_ID=${storeId}\n`, 'utf-8')
         console.log('   ✅ Added to .env.local automatically!\n')
       } else {
         console.log('   ℹ️  GOOGLE_CORPUS_ID already exists in .env.local - please update manually if needed\n')
